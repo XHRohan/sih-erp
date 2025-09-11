@@ -20,23 +20,115 @@ import {
     Button
 } from '@mui/material';
 import { payFees } from '../utils/data';
+import { 
+  startNotificationService, 
+  stopNotificationService, 
+  requestNotificationPermission,
+  getTodaySchedule,
+  getNextLecture,
+  getCurrentLecture
+} from '../utils/notifications';
 import {
     Person as PersonIcon,
     Grade as GradeIcon,
     Assignment as AssignmentIcon,
-    Announcement as AnnouncementIcon
+    Announcement as AnnouncementIcon,
+    Notifications as NotificationsIcon,
+    NotificationsActive as NotificationsActiveIcon
 } from '@mui/icons-material';
 import CareerAI from './CareerAI';
 
 const StudentView = ({ user, data, setData, setSnackbar }) => {
+    // All hooks must be at the top, before any conditional returns
+    const [notificationsEnabled, setNotificationsEnabled] = React.useState(false);
+    const [nextLecture, setNextLecture] = React.useState(null);
+    const [currentLecture, setCurrentLecture] = React.useState(null);
+    const [todaySchedule, setTodaySchedule] = React.useState([]);
+
+    // Get current student data (moved before useEffect)
+    const currentStudent = data?.students?.find(s => s.id === user.studentId);
+
+    // Initialize notifications and schedule data
+    React.useEffect(() => {
+        if (currentStudent && data?.timetable) {
+            // Get today's schedule
+            const schedule = getTodaySchedule(currentStudent.id);
+            setTodaySchedule(schedule);
+            
+            // Get current and next lectures
+            setCurrentLecture(getCurrentLecture(currentStudent.id));
+            setNextLecture(getNextLecture(currentStudent.id));
+            
+            // Check if notifications are supported and enabled
+            if ('Notification' in window) {
+                setNotificationsEnabled(Notification.permission === 'granted');
+            }
+        }
+    }, [currentStudent, data?.timetable]);
+
+    // Update current/next lecture every minute
+    React.useEffect(() => {
+        const interval = setInterval(() => {
+            if (currentStudent) {
+                setCurrentLecture(getCurrentLecture(currentStudent.id));
+                setNextLecture(getNextLecture(currentStudent.id));
+            }
+        }, 60000); // Update every minute
+
+        return () => clearInterval(interval);
+    }, [currentStudent]);
+
+    // Cleanup notification service on unmount
+    React.useEffect(() => {
+        return () => {
+            stopNotificationService();
+        };
+    }, []);
+
+    // Handle notification toggle
+    const handleNotificationToggle = async () => {
+        if (!currentStudent) return;
+        
+        if (!notificationsEnabled) {
+            const granted = await requestNotificationPermission();
+            if (granted) {
+                setNotificationsEnabled(true);
+                startNotificationService(currentStudent.id);
+                if (setSnackbar) {
+                    setSnackbar({
+                        open: true,
+                        message: 'Lecture notifications enabled! You\'ll be notified 10 minutes before each class.',
+                        severity: 'success'
+                    });
+                }
+            } else {
+                if (setSnackbar) {
+                    setSnackbar({
+                        open: true,
+                        message: 'Please allow notifications in your browser settings to receive lecture reminders.',
+                        severity: 'warning'
+                    });
+                }
+            }
+        } else {
+            stopNotificationService();
+            setNotificationsEnabled(false);
+            if (setSnackbar) {
+                setSnackbar({
+                    open: true,
+                    message: 'Lecture notifications disabled.',
+                    severity: 'info'
+                });
+            }
+        }
+    };
+
+    // Early returns after all hooks
     if (!data) return <Typography>Loading...</Typography>;
+    if (!currentStudent) return <Typography>Student data not found</Typography>;
     
     // Debug log to check notices
     console.log('StudentView received notices:', data.notices?.length, 'notices');
-
-    // Get current student data
-    const currentStudent = data.students.find(s => s.id === user.studentId);
-    if (!currentStudent) return <Typography>Student data not found</Typography>;
 
     // Get student's class
     const studentClass = data.classes.find(c => c.id === currentStudent.classId);
@@ -174,6 +266,104 @@ const StudentView = ({ user, data, setData, setSnackbar }) => {
                                         />
                                     ))}
                                 </Box>
+                            </Box>
+                        )}
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            {/* Live Schedule & Notifications */}
+            <Grid item xs={12} md={6}>
+                <Card>
+                    <CardHeader
+                        title="Today's Schedule & Notifications"
+                        avatar={<PersonIcon />}
+                        action={
+                            'Notification' in window && (
+                                <Button
+                                    variant={notificationsEnabled ? "contained" : "outlined"}
+                                    color={notificationsEnabled ? "success" : "primary"}
+                                    size="small"
+                                    onClick={handleNotificationToggle}
+                                    startIcon={notificationsEnabled ? <NotificationsActiveIcon /> : <NotificationsIcon />}
+                                >
+                                    {notificationsEnabled ? 'Notifications ON' : 'Enable Notifications'}
+                                </Button>
+                            )
+                        }
+                    />
+                    <CardContent>
+                        {/* Current Lecture */}
+                        {currentLecture && (
+                            <Box sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
+                                <Typography variant="subtitle1" fontWeight="bold" color="white">
+                                    🔴 Currently in Class
+                                </Typography>
+                                <Typography variant="body2" color="white">
+                                    {currentLecture.subject} with {currentLecture.teacher}
+                                </Typography>
+                                <Typography variant="caption" color="white">
+                                    {currentLecture.time} • {currentLecture.room}
+                                </Typography>
+                            </Box>
+                        )}
+
+                        {/* Next Lecture */}
+                        {nextLecture && (
+                            <Box sx={{ mb: 2, p: 2, bgcolor: 'primary.light', borderRadius: 1 }}>
+                                <Typography variant="subtitle1" fontWeight="bold" color="white">
+                                    ⏰ Next Class
+                                </Typography>
+                                <Typography variant="body2" color="white">
+                                    {nextLecture.subject} with {nextLecture.teacher}
+                                </Typography>
+                                <Typography variant="caption" color="white">
+                                    {nextLecture.time} • {nextLecture.room}
+                                </Typography>
+                            </Box>
+                        )}
+
+                        {/* Today's Schedule Summary */}
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                                Today's Classes ({todaySchedule.length})
+                            </Typography>
+                            {todaySchedule.length > 0 ? (
+                                <List dense>
+                                    {todaySchedule.map((lecture, index) => (
+                                        <ListItem key={index} sx={{ px: 0 }}>
+                                            <ListItemText
+                                                primary={
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <Typography variant="body2" fontWeight="medium">
+                                                            {lecture.time}
+                                                        </Typography>
+                                                        <Chip 
+                                                            label={lecture.subject} 
+                                                            size="small" 
+                                                            color="primary"
+                                                            variant="outlined"
+                                                        />
+                                                    </Box>
+                                                }
+                                                secondary={`${lecture.teacher} • ${lecture.room}`}
+                                            />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            ) : (
+                                <Typography variant="body2" color="text.secondary">
+                                    No classes scheduled for today
+                                </Typography>
+                            )}
+                        </Box>
+
+                        {/* Notification Status */}
+                        {notificationsEnabled && (
+                            <Box sx={{ mt: 2, p: 1, bgcolor: 'success.light', borderRadius: 1 }}>
+                                <Typography variant="caption" color="white" display="block">
+                                    🔔 You'll be notified 10 minutes before each class starts
+                                </Typography>
                             </Box>
                         )}
                     </CardContent>
