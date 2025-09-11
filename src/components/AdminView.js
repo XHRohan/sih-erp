@@ -297,38 +297,6 @@ const AdminView = ({ data, handleOpenDialog, handleAlumniAction }) => {
         </Card>
       </Grid>
 
-      {/* User Account Management */}
-      <Grid item xs={12}>
-        <Card>
-          <CardHeader 
-            title="User Account Management"
-            action={
-              <Button 
-                variant="contained" 
-                startIcon={<AddIcon />}
-                onClick={() => handleOpenDialog('user')}
-              >
-                Create User Account
-              </Button>
-            }
-          />
-          <CardContent>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Create new user accounts with username and password
-            </Typography>
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="body2">
-                <strong>Total Users:</strong> {data.users.length} 
-                (Admin: {data.users.filter(u => u.role === 'admin').length}, 
-                Teachers: {data.users.filter(u => u.role === 'teacher').length}, 
-                Students: {data.users.filter(u => u.role === 'student').length}, 
-                Alumni: {data.users.filter(u => u.role === 'alumni').length})
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-
       {/* Notice Posting Section */}
       <Grid item xs={12}>
         <Card>

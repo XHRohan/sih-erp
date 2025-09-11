@@ -99,35 +99,80 @@ const Dashboard = ({ user, onLogout }) => {
 
       switch (dialogType) {
         case 'teacher':
+          const teacherId = currentData.teachers.length + 1;
           const newTeacher = {
-            id: currentData.teachers.length + 1,
+            id: teacherId,
             name: formData.name,
             subject: formData.subject,
             classes: formData.classes || []
           };
-          const teacherResult = addRecord('teachers', newTeacher);
+          
+          // Create teacher record
+          let teacherResult = addRecord('teachers', newTeacher);
+          
           if (teacherResult) {
-            setData(teacherResult);
-            success = true;
-            message = 'Teacher added successfully';
+            // Create user account for the teacher
+            const newTeacherUser = {
+              id: `teacher${teacherId}`,
+              username: formData.username,
+              password: formData.password,
+              role: 'teacher',
+              name: formData.name,
+              email: formData.email,
+              teacherId: teacherId
+            };
+            
+            const userResult = addRecord('users', newTeacherUser);
+            if (userResult) {
+              setData(userResult);
+              success = true;
+              message = 'Teacher and login account created successfully';
+            } else {
+              success = false;
+              message = 'Teacher created but failed to create login account';
+            }
           }
           break;
         case 'student':
+          const studentId = currentData.students.length + 1;
           const newStudent = {
-            id: currentData.students.length + 1,
+            id: studentId,
             name: formData.name,
             dob: formData.dob,
             admissionNumber: formData.admissionNumber,
             address: formData.address,
             phone: formData.phone,
             email: formData.email,
-            classId: parseInt(formData.classId)
+            classId: parseInt(formData.classId),
+            totalFees: 120000, // Default fee amount
+            feesPaid: 0,
+            feesRemaining: 120000
           };
-          const studentResult = addRecord('students', newStudent);
+          
+          // Create student record
+          let studentResult = addRecord('students', newStudent);
+          
           if (studentResult) {
-            setData(studentResult);
-            success = true;
-            message = 'Student added successfully';
+            // Create user account for the student
+            const newStudentUser = {
+              id: `student${studentId}`,
+              username: formData.username,
+              password: formData.password,
+              role: 'student',
+              name: formData.name,
+              email: formData.email,
+              studentId: studentId
+            };
+            
+            const userResult = addRecord('users', newStudentUser);
+            if (userResult) {
+              setData(userResult);
+              success = true;
+              message = 'Student and login account created successfully';
+            } else {
+              success = false;
+              message = 'Student created but failed to create login account';
+            }
           }
           break;
         case 'class':
@@ -159,32 +204,7 @@ const Dashboard = ({ user, onLogout }) => {
             message = 'Notice posted successfully';
           }
           break;
-        case 'user':
-          const newUser = {
-            id: `${formData.role}${currentData.users.filter(u => u.role === formData.role).length + 1}`,
-            username: formData.username,
-            password: formData.password,
-            role: formData.role,
-            name: formData.name,
-            email: formData.email
-          };
-          
-          // Add role-specific IDs
-          if (formData.role === 'teacher') {
-            newUser.teacherId = currentData.teachers.length + 1;
-          } else if (formData.role === 'student') {
-            newUser.studentId = currentData.students.length + 1;
-          } else if (formData.role === 'alumni') {
-            newUser.alumniId = currentData.alumni.length + 1;
-          }
-          
-          const userResult = addRecord('users', newUser);
-          if (userResult) {
-            setData(userResult);
-            success = true;
-            message = 'User account created successfully';
-          }
-          break;
+
       }
 
       setSnackbar({ open: true, message, severity: success ? 'success' : 'error' });
@@ -276,7 +296,6 @@ const Dashboard = ({ user, onLogout }) => {
         case 'student': return 'Add New Student';
         case 'class': return 'Add New Class';
         case 'notice': return 'Post New Notice';
-        case 'user': return 'Create User Account';
         default: return 'Add New';
       }
     };
@@ -295,6 +314,38 @@ const Dashboard = ({ user, onLogout }) => {
                 value={formData.name || ''}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
+              />
+              <TextField
+                margin="dense"
+                label="Email"
+                type="email"
+                fullWidth
+                variant="outlined"
+                value={formData.email || ''}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                helperText="Teacher's email address"
+              />
+              <TextField
+                margin="dense"
+                label="Username"
+                fullWidth
+                variant="outlined"
+                value={formData.username || ''}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                required
+                helperText="Login username (e.g., firstname.lastname)"
+              />
+              <TextField
+                margin="dense"
+                label="Password"
+                type="password"
+                fullWidth
+                variant="outlined"
+                value={formData.password || ''}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                helperText="Login password (minimum 6 characters)"
               />
               <TextField
                 margin="dense"
@@ -340,6 +391,44 @@ const Dashboard = ({ user, onLogout }) => {
                 variant="outlined"
                 value={formData.name || ''}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+              <TextField
+                margin="dense"
+                label="Admission Number"
+                fullWidth
+                variant="outlined"
+                value={formData.admissionNumber || ''}
+                onChange={(e) => {
+                  setFormData({ 
+                    ...formData, 
+                    admissionNumber: e.target.value,
+                    username: e.target.value // Auto-set username as admission number
+                  });
+                }}
+                required
+                helperText="This will be used as the login username"
+              />
+              <TextField
+                margin="dense"
+                label="Username"
+                fullWidth
+                variant="outlined"
+                value={formData.username || formData.admissionNumber || ''}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                required
+                helperText="Login username (auto-filled from admission number)"
+              />
+              <TextField
+                margin="dense"
+                label="Password"
+                type="password"
+                fullWidth
+                variant="outlined"
+                value={formData.password || ''}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                helperText="Login password (minimum 6 characters)"
               />
               <TextField
                 margin="dense"
@@ -350,14 +439,26 @@ const Dashboard = ({ user, onLogout }) => {
                 slotProps={{ inputLabel: { shrink: true } }}
                 value={formData.dob || ''}
                 onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                required
               />
               <TextField
                 margin="dense"
-                label="Admission Number"
+                label="Email"
+                type="email"
                 fullWidth
                 variant="outlined"
-                value={formData.admissionNumber || ''}
-                onChange={(e) => setFormData({ ...formData, admissionNumber: e.target.value })}
+                value={formData.email || ''}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+              <TextField
+                margin="dense"
+                label="Phone"
+                fullWidth
+                variant="outlined"
+                value={formData.phone || ''}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                required
               />
               <TextField
                 margin="dense"
@@ -368,23 +469,7 @@ const Dashboard = ({ user, onLogout }) => {
                 variant="outlined"
                 value={formData.address || ''}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
-              <TextField
-                margin="dense"
-                label="Phone"
-                fullWidth
-                variant="outlined"
-                value={formData.phone || ''}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-              <TextField
-                margin="dense"
-                label="Email"
-                type="email"
-                fullWidth
-                variant="outlined"
-                value={formData.email || ''}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
               />
               <FormControl fullWidth margin="dense">
                 <InputLabel>Class</InputLabel>
@@ -392,6 +477,7 @@ const Dashboard = ({ user, onLogout }) => {
                   value={formData.classId || ''}
                   label="Class"
                   onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
+                  required
                 >
                   {data?.classes.map((cls) => (
                     <MenuItem key={cls.id} value={cls.id}>
@@ -399,6 +485,7 @@ const Dashboard = ({ user, onLogout }) => {
                     </MenuItem>
                   ))}
                 </Select>
+                <FormHelperText>Select the class for this student</FormHelperText>
               </FormControl>
             </>
           );
@@ -440,67 +527,7 @@ const Dashboard = ({ user, onLogout }) => {
               />
             </>
           );
-        case 'user':
-          return (
-            <>
-              <TextField
-                autoFocus
-                margin="dense"
-                label="Full Name"
-                fullWidth
-                variant="outlined"
-                value={formData.name || ''}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-              <TextField
-                margin="dense"
-                label="Username"
-                fullWidth
-                variant="outlined"
-                value={formData.username || ''}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                required
-                helperText="Unique username for login"
-              />
-              <TextField
-                margin="dense"
-                label="Password"
-                type="password"
-                fullWidth
-                variant="outlined"
-                value={formData.password || ''}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                helperText="Minimum 6 characters"
-              />
-              <TextField
-                margin="dense"
-                label="Email"
-                type="email"
-                fullWidth
-                variant="outlined"
-                value={formData.email || ''}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-              <FormControl fullWidth margin="dense">
-                <InputLabel>Role</InputLabel>
-                <Select
-                  value={formData.role || ''}
-                  label="Role"
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  required
-                >
-                  <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="teacher">Teacher</MenuItem>
-                  <MenuItem value="student">Student</MenuItem>
-                  <MenuItem value="alumni">Alumni</MenuItem>
-                </Select>
-                <FormHelperText>Select user role and permissions</FormHelperText>
-              </FormControl>
-            </>
-          );
+
         default:
           return null;
       }
