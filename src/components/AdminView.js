@@ -36,8 +36,7 @@ const AdminView = ({ data, handleOpenDialog, handleAlumniAction }) => {
     { field: 'id', headerName: 'ID', width: 70 },
     { field: 'name', headerName: 'Name', width: 150 },
     { field: 'admissionNumber', headerName: 'Admission No.', width: 130 },
-    { field: 'email', headerName: 'Email', width: 200 },
-    { field: 'phone', headerName: 'Phone', width: 130 },
+    { field: 'email', headerName: 'Email', width: 180 },
     { 
       field: 'classId', 
       headerName: 'Class', 
@@ -46,6 +45,30 @@ const AdminView = ({ data, handleOpenDialog, handleAlumniAction }) => {
         const className = data.classes.find(c => c.id === params.value)?.name || 'N/A';
         return className;
       }
+    },
+    { 
+      field: 'totalFees', 
+      headerName: 'Total Fees', 
+      width: 110,
+      renderCell: (params) => `₹${params.value?.toLocaleString() || '0'}`
+    },
+    { 
+      field: 'feesPaid', 
+      headerName: 'Paid', 
+      width: 100,
+      renderCell: (params) => `₹${params.value?.toLocaleString() || '0'}`
+    },
+    { 
+      field: 'feesRemaining', 
+      headerName: 'Remaining', 
+      width: 110,
+      renderCell: (params) => (
+        <Chip 
+          label={`₹${params.value?.toLocaleString() || '0'}`}
+          color={params.value === 0 ? 'success' : params.value > 50000 ? 'error' : 'warning'}
+          size="small"
+        />
+      )
     }
   ];
 
@@ -226,6 +249,81 @@ const AdminView = ({ data, handleOpenDialog, handleAlumniAction }) => {
                 pageSizeOptions={[5]}
                 disableRowSelectionOnClick
               />
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* Fees Summary Section */}
+      <Grid item xs={12}>
+        <Card>
+          <CardHeader title="Fees Summary" />
+          <CardContent>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={3}>
+                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'primary.light', borderRadius: 1 }}>
+                  <Typography variant="h6" color="white">
+                    ₹{data.students.reduce((sum, student) => sum + (student.totalFees || 0), 0).toLocaleString()}
+                  </Typography>
+                  <Typography variant="body2" color="white">Total Fees</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
+                  <Typography variant="h6" color="white">
+                    ₹{data.students.reduce((sum, student) => sum + (student.feesPaid || 0), 0).toLocaleString()}
+                  </Typography>
+                  <Typography variant="body2" color="white">Fees Collected</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
+                  <Typography variant="h6" color="white">
+                    ₹{data.students.reduce((sum, student) => sum + (student.feesRemaining || 0), 0).toLocaleString()}
+                  </Typography>
+                  <Typography variant="body2" color="white">Fees Pending</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+                  <Typography variant="h6" color="white">
+                    {Math.round((data.students.reduce((sum, student) => sum + (student.feesPaid || 0), 0) / data.students.reduce((sum, student) => sum + (student.totalFees || 0), 0)) * 100)}%
+                  </Typography>
+                  <Typography variant="body2" color="white">Collection Rate</Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* User Account Management */}
+      <Grid item xs={12}>
+        <Card>
+          <CardHeader 
+            title="User Account Management"
+            action={
+              <Button 
+                variant="contained" 
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenDialog('user')}
+              >
+                Create User Account
+              </Button>
+            }
+          />
+          <CardContent>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Create new user accounts with username and password
+            </Typography>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2">
+                <strong>Total Users:</strong> {data.users.length} 
+                (Admin: {data.users.filter(u => u.role === 'admin').length}, 
+                Teachers: {data.users.filter(u => u.role === 'teacher').length}, 
+                Students: {data.users.filter(u => u.role === 'student').length}, 
+                Alumni: {data.users.filter(u => u.role === 'alumni').length})
+              </Typography>
             </Box>
           </CardContent>
         </Card>

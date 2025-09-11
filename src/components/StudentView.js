@@ -16,8 +16,10 @@ import {
     List,
     ListItem,
     ListItemText,
-    Divider
+    Divider,
+    Button
 } from '@mui/material';
+import { payFees } from '../utils/data';
 import {
     Person as PersonIcon,
     Grade as GradeIcon,
@@ -26,7 +28,7 @@ import {
 } from '@mui/icons-material';
 import CareerAI from './CareerAI';
 
-const StudentView = ({ user, data }) => {
+const StudentView = ({ user, data, setData, setSnackbar }) => {
     if (!data) return <Typography>Loading...</Typography>;
     
     // Debug log to check notices
@@ -278,12 +280,149 @@ const StudentView = ({ user, data }) => {
                 </Card>
             </Grid>
 
+            {/* Fees Information */}
+            <Grid item xs={12} md={6}>
+                <Card>
+                    <CardHeader
+                        title="Fee Status"
+                        avatar={<PersonIcon />}
+                    />
+                    <CardContent>
+                        <Box sx={{ mb: 2 }}>
+                            <Typography variant="h6" gutterBottom>
+                                Total Fees: ₹{currentStudent.totalFees?.toLocaleString() || '0'}
+                            </Typography>
+                            <Typography variant="body1" color="success.main" gutterBottom>
+                                Paid: ₹{currentStudent.feesPaid?.toLocaleString() || '0'}
+                            </Typography>
+                            <Typography variant="body1" color={currentStudent.feesRemaining > 0 ? "error.main" : "success.main"} gutterBottom>
+                                Remaining: ₹{currentStudent.feesRemaining?.toLocaleString() || '0'}
+                            </Typography>
+                        </Box>
+
+                        <Divider sx={{ my: 2 }} />
+
+                        {currentStudent.feesRemaining > 0 && (
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                fullWidth
+                                onClick={() => {
+                                    // Mock payment - simulate payment process
+                                    const paymentAmount = Math.min(currentStudent.feesRemaining, 25000); // Pay up to 25k
+                                    const updatedData = payFees(currentStudent.id, paymentAmount);
+                                    
+                                    if (updatedData && setData && setSnackbar) {
+                                        setData(updatedData);
+                                        setSnackbar({
+                                            open: true,
+                                            message: `Payment successful! ₹${paymentAmount.toLocaleString()} paid.`,
+                                            severity: 'success'
+                                        });
+                                    } else {
+                                        // Fallback - refresh page if callbacks not available
+                                        window.location.reload();
+                                    }
+                                }}
+                                sx={{ mt: 1 }}
+                            >
+                                Pay Fees (₹{Math.min(currentStudent.feesRemaining, 25000).toLocaleString()})
+                            </Button>
+                        )}
+
+                        {currentStudent.feesRemaining === 0 && (
+                            <Chip
+                                label="All Fees Paid ✓"
+                                color="success"
+                                sx={{ width: '100%', height: 40 }}
+                            />
+                        )}
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            {/* Weekly Timetable */}
+            <Grid item xs={12}>
+                <Card>
+                    <CardHeader
+                        title="Weekly Timetable"
+                        avatar={<PersonIcon />}
+                        subheader={`Class: ${studentClass?.name}`}
+                    />
+                    <CardContent>
+                        {data.timetable && data.timetable.classSchedules[currentStudent.classId] ? (
+                            <Box sx={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+                                    <thead>
+                                        <tr style={{ backgroundColor: '#f5f5f5' }}>
+                                            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'left' }}>Time</th>
+                                            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Monday</th>
+                                            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Tuesday</th>
+                                            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Wednesday</th>
+                                            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Thursday</th>
+                                            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Friday</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {data.timetable.timeSlots.map(timeSlot => (
+                                            <tr key={timeSlot.id}>
+                                                <td style={{ border: '1px solid #ddd', padding: '12px', fontWeight: 'bold', backgroundColor: '#fafafa' }}>
+                                                    <Box>
+                                                        <Typography variant="body2" fontWeight="bold">{timeSlot.period}</Typography>
+                                                        <Typography variant="caption" color="text.secondary">{timeSlot.time}</Typography>
+                                                    </Box>
+                                                </td>
+                                                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => {
+                                                    const daySchedule = data.timetable.classSchedules[currentStudent.classId][day];
+                                                    const lecture = daySchedule?.find(l => l.period === timeSlot.id);
+                                                    const teacher = lecture?.teacherId ? data.teachers.find(t => t.id === lecture.teacherId) : null;
+                                                    
+                                                    return (
+                                                        <td key={day} style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>
+                                                            {lecture ? (
+                                                                <Box>
+                                                                    <Typography variant="body2" fontWeight="medium" color="primary">
+                                                                        {lecture.subject}
+                                                                    </Typography>
+                                                                    {teacher && (
+                                                                        <Typography variant="caption" color="text.secondary">
+                                                                            {teacher.name}
+                                                                        </Typography>
+                                                                    )}
+                                                                    {lecture.room && (
+                                                                        <Typography variant="caption" display="block" color="text.secondary">
+                                                                            {lecture.room}
+                                                                        </Typography>
+                                                                    )}
+                                                                </Box>
+                                                            ) : (
+                                                                <Typography variant="caption" color="text.secondary">
+                                                                    -
+                                                                </Typography>
+                                                            )}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </Box>
+                        ) : (
+                            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                                Timetable not available
+                            </Typography>
+                        )}
+                    </CardContent>
+                </Card>
+            </Grid>
+
             {/* Notices */}
             <Grid item xs={12} md={6}>
                 <Card>
                     <CardHeader
                         title="Notices & Announcements"
-                        avatar={<AnnouncementIcon />}
+                        avatar={<PersonIcon />}
                     />
                     <CardContent>
                         <List dense>

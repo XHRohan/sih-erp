@@ -159,6 +159,32 @@ const Dashboard = ({ user, onLogout }) => {
             message = 'Notice posted successfully';
           }
           break;
+        case 'user':
+          const newUser = {
+            id: `${formData.role}${currentData.users.filter(u => u.role === formData.role).length + 1}`,
+            username: formData.username,
+            password: formData.password,
+            role: formData.role,
+            name: formData.name,
+            email: formData.email
+          };
+          
+          // Add role-specific IDs
+          if (formData.role === 'teacher') {
+            newUser.teacherId = currentData.teachers.length + 1;
+          } else if (formData.role === 'student') {
+            newUser.studentId = currentData.students.length + 1;
+          } else if (formData.role === 'alumni') {
+            newUser.alumniId = currentData.alumni.length + 1;
+          }
+          
+          const userResult = addRecord('users', newUser);
+          if (userResult) {
+            setData(userResult);
+            success = true;
+            message = 'User account created successfully';
+          }
+          break;
       }
 
       setSnackbar({ open: true, message, severity: success ? 'success' : 'error' });
@@ -222,7 +248,7 @@ const Dashboard = ({ user, onLogout }) => {
     }
 
     if (user.role === 'student') {
-      return <StudentView user={user} data={data} />;
+      return <StudentView user={user} data={data} setData={setData} setSnackbar={setSnackbar} />;
     }
 
     if (user.role === 'alumni') {
@@ -250,6 +276,7 @@ const Dashboard = ({ user, onLogout }) => {
         case 'student': return 'Add New Student';
         case 'class': return 'Add New Class';
         case 'notice': return 'Post New Notice';
+        case 'user': return 'Create User Account';
         default: return 'Add New';
       }
     };
@@ -411,6 +438,67 @@ const Dashboard = ({ user, onLogout }) => {
                 value={formData.message || ''}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               />
+            </>
+          );
+        case 'user':
+          return (
+            <>
+              <TextField
+                autoFocus
+                margin="dense"
+                label="Full Name"
+                fullWidth
+                variant="outlined"
+                value={formData.name || ''}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+              <TextField
+                margin="dense"
+                label="Username"
+                fullWidth
+                variant="outlined"
+                value={formData.username || ''}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                required
+                helperText="Unique username for login"
+              />
+              <TextField
+                margin="dense"
+                label="Password"
+                type="password"
+                fullWidth
+                variant="outlined"
+                value={formData.password || ''}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                helperText="Minimum 6 characters"
+              />
+              <TextField
+                margin="dense"
+                label="Email"
+                type="email"
+                fullWidth
+                variant="outlined"
+                value={formData.email || ''}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+              <FormControl fullWidth margin="dense">
+                <InputLabel>Role</InputLabel>
+                <Select
+                  value={formData.role || ''}
+                  label="Role"
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  required
+                >
+                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="teacher">Teacher</MenuItem>
+                  <MenuItem value="student">Student</MenuItem>
+                  <MenuItem value="alumni">Alumni</MenuItem>
+                </Select>
+                <FormHelperText>Select user role and permissions</FormHelperText>
+              </FormControl>
             </>
           );
         default:
