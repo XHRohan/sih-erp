@@ -4,7 +4,7 @@ const ERP_DATA_KEY = 'erpData';
 // Validate basic data structure
 const validateDataStructure = (data) => {
   if (!data || typeof data !== 'object') return false;
-  const required = ['users', 'teachers', 'students', 'classes', 'attendance', 'grades', 'notices', 'alumni', 'alumniEvents'];
+  const required = ['users', 'teachers', 'students', 'classes', 'attendance', 'grades', 'notices', 'alumni', 'alumniEvents', 'disciplineBadges'];
   return required.every(key => data.hasOwnProperty(key));
 };
 
@@ -298,6 +298,19 @@ const getDefaultMockData = () => ({
       author: "System Admin"
     }
   ],
+
+  // Discipline badges for students
+  disciplineBadges: {
+    // Example: student ID 3 has a bad discipline badge
+    3: {
+      hasBadDiscipline: true,
+      reason: "Repeated late submissions and disruptive behavior",
+      assignedBy: "System Admin",
+      assignedDate: "2025-09-08",
+      notes: "Student counseling recommended"
+    }
+    // Other students don't have discipline issues
+  },
 
   // Weekly timetable for all classes
   timetable: {
@@ -820,6 +833,70 @@ export const deleteRecord = (collection, id) => {
     return saveData(currentData) ? currentData : null;
   } catch (error) {
     console.error('Error deleting record:', error);
+    return null;
+  }
+};
+
+// Add or update discipline badge for a student
+export const setDisciplineBadge = (studentId, badgeData) => {
+  try {
+    const data = getData();
+    if (!data) return null;
+
+    const student = data.students.find(s => s.id === studentId);
+    if (!student) return null;
+
+    if (!data.disciplineBadges) {
+      data.disciplineBadges = {};
+    }
+
+    data.disciplineBadges[studentId] = {
+      hasBadDiscipline: true,
+      reason: badgeData.reason || 'Disciplinary action required',
+      assignedBy: badgeData.assignedBy || 'System Admin',
+      assignedDate: new Date().toISOString().split('T')[0],
+      notes: badgeData.notes || ''
+    };
+
+    if (saveData(data)) {
+      return data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error setting discipline badge:', error);
+    return null;
+  }
+};
+
+// Remove discipline badge for a student
+export const removeDisciplineBadge = (studentId) => {
+  try {
+    const data = getData();
+    if (!data) return null;
+
+    if (data.disciplineBadges && data.disciplineBadges[studentId]) {
+      delete data.disciplineBadges[studentId];
+    }
+
+    if (saveData(data)) {
+      return data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error removing discipline badge:', error);
+    return null;
+  }
+};
+
+// Get discipline badge for a student
+export const getDisciplineBadge = (studentId) => {
+  try {
+    const data = getData();
+    if (!data || !data.disciplineBadges) return null;
+
+    return data.disciplineBadges[studentId] || null;
+  } catch (error) {
+    console.error('Error getting discipline badge:', error);
     return null;
   }
 };

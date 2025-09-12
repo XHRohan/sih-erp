@@ -14,11 +14,29 @@ import { DataGrid } from '@mui/x-data-grid';
 import {
   Add as AddIcon,
   Check as CheckIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  VideoCall as VideoCallIcon,
+  School as SchoolIcon,
+  Warning as WarningIcon
 } from '@mui/icons-material';
 
-const AdminView = ({ data, handleOpenDialog, handleAlumniAction }) => {
+const AdminView = ({ data, handleOpenDialog, handleAlumniAction, onOpenTeacherClassroom, onOpenStudentClassroom, onDisciplineAction }) => {
   if (!data) return <Typography>Loading...</Typography>;
+
+  // Handle discipline badge actions
+  const handleAddDisciplineBadge = (student) => {
+    handleOpenDialog('discipline', { 
+      studentId: student.id, 
+      studentName: student.name,
+      action: 'add'
+    });
+  };
+
+  const handleRemoveDisciplineBadge = (studentId) => {
+    if (onDisciplineAction) {
+      onDisciplineAction(studentId, 'remove');
+    }
+  };
 
   const teacherColumns = [
     { field: 'id', headerName: 'ID', width: 70 },
@@ -47,6 +65,29 @@ const AdminView = ({ data, handleOpenDialog, handleAlumniAction }) => {
       }
     },
     { 
+      field: 'discipline', 
+      headerName: 'Discipline', 
+      width: 120,
+      renderCell: (params) => {
+        const disciplineBadge = data.disciplineBadges?.[params.row.id];
+        return disciplineBadge?.hasBadDiscipline ? (
+          <Chip 
+            label="Bad Discipline" 
+            color="error" 
+            size="small"
+            sx={{ fontWeight: 'bold' }}
+          />
+        ) : (
+          <Chip 
+            label="Good" 
+            color="success" 
+            size="small"
+            variant="outlined"
+          />
+        );
+      }
+    },
+    { 
       field: 'totalFees', 
       headerName: 'Total Fees', 
       width: 110,
@@ -69,6 +110,37 @@ const AdminView = ({ data, handleOpenDialog, handleAlumniAction }) => {
           size="small"
         />
       )
+    },
+    {
+      field: 'actions',
+      headerName: 'Discipline Actions',
+      width: 180,
+      renderCell: (params) => {
+        const disciplineBadge = data.disciplineBadges?.[params.row.id];
+        return (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {disciplineBadge?.hasBadDiscipline ? (
+              <Button
+                size="small"
+                variant="outlined"
+                color="success"
+                onClick={() => handleRemoveDisciplineBadge(params.row.id)}
+              >
+                Remove Badge
+              </Button>
+            ) : (
+              <Button
+                size="small"
+                variant="outlined"
+                color="error"
+                onClick={() => handleAddDisciplineBadge(params.row)}
+              >
+                Add Badge
+              </Button>
+            )}
+          </Box>
+        );
+      }
     }
   ];
 
@@ -290,6 +362,55 @@ const AdminView = ({ data, handleOpenDialog, handleAlumniAction }) => {
                     {Math.round((data.students.reduce((sum, student) => sum + (student.feesPaid || 0), 0) / data.students.reduce((sum, student) => sum + (student.totalFees || 0), 0)) * 100)}%
                   </Typography>
                   <Typography variant="body2" color="white">Collection Rate</Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* Online Classroom Management */}
+      <Grid item xs={12}>
+        <Card>
+          <CardHeader title="Online Classroom Management" />
+          <CardContent>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ textAlign: 'center', p: 3, bgcolor: 'primary.light', borderRadius: 2 }}>
+                  <VideoCallIcon sx={{ fontSize: 48, color: 'white', mb: 2 }} />
+                  <Typography variant="h6" color="white" gutterBottom>
+                    Teacher Dashboard
+                  </Typography>
+                  <Typography variant="body2" color="white" sx={{ mb: 2 }}>
+                    Start and manage online classes
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="secondary"
+                    onClick={onOpenTeacherClassroom}
+                    sx={{ bgcolor: 'white', color: 'primary.main', '&:hover': { bgcolor: 'grey.100' } }}
+                  >
+                    Open Teacher Portal
+                  </Button>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ textAlign: 'center', p: 3, bgcolor: 'success.light', borderRadius: 2 }}>
+                  <SchoolIcon sx={{ fontSize: 48, color: 'white', mb: 2 }} />
+                  <Typography variant="h6" color="white" gutterBottom>
+                    Student Portal
+                  </Typography>
+                  <Typography variant="body2" color="white" sx={{ mb: 2 }}>
+                    Join live classes and view schedules
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="secondary"
+                    onClick={onOpenStudentClassroom}
+                    sx={{ bgcolor: 'white', color: 'success.main', '&:hover': { bgcolor: 'grey.100' } }}
+                  >
+                    Open Student Portal
+                  </Button>
                 </Box>
               </Grid>
             </Grid>

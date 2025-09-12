@@ -32,8 +32,10 @@ import {
   Cancel as CancelIcon,
   Today as TodayIcon,
   Class as ClassIcon,
-  Schedule as ScheduleIcon
+  Schedule as ScheduleIcon,
+  VideoCall as VideoCallIcon
 } from '@mui/icons-material';
+import TeacherClassroom from './TeacherClassroom';
 import { getData, saveData } from '../utils/data';
 
 const TeacherView = ({ user, data, setData, setSnackbar }) => {
@@ -45,6 +47,7 @@ const TeacherView = ({ user, data, setData, setSnackbar }) => {
   const [activeTab, setActiveTab] = useState('classes');
   const [loading, setLoading] = useState(false);
   const [existingAttendance, setExistingAttendance] = useState(null);
+  const [showOnlineClassroom, setShowOnlineClassroom] = useState(false);
 
   // Get current teacher data (moved before useEffect)
   const currentTeacher = data?.teachers?.find(t => t.id === user.teacherId);
@@ -239,6 +242,27 @@ const TeacherView = ({ user, data, setData, setSnackbar }) => {
     }
   };
 
+  // Handle online classroom
+  const handleBackFromClassroom = () => {
+    setShowOnlineClassroom(false);
+  };
+
+  // Show online classroom if requested
+  if (showOnlineClassroom) {
+    return (
+      <TeacherClassroom
+        teacher={{
+          id: currentTeacher.id,
+          name: currentTeacher.name,
+          subject: currentTeacher.subject
+        }}
+        classes={teacherClasses}
+        students={data.students}
+        onBack={handleBackFromClassroom}
+      />
+    );
+  }
+
   return (
     <Grid container spacing={3}>
       {/* Teacher Info Card */}
@@ -258,26 +282,36 @@ const TeacherView = ({ user, data, setData, setSnackbar }) => {
 
       {/* Navigation Tabs */}
       <Grid item xs={12}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
           <Button
             variant={activeTab === 'classes' ? 'contained' : 'outlined'}
             onClick={() => setActiveTab('classes')}
-            sx={{ mr: 1 }}
+            startIcon={<ClassIcon />}
           >
             My Classes
           </Button>
           <Button
             variant={activeTab === 'attendance' ? 'contained' : 'outlined'}
             onClick={() => setActiveTab('attendance')}
-            sx={{ mr: 1 }}
+            startIcon={<TodayIcon />}
           >
             Mark Attendance
           </Button>
           <Button
             variant={activeTab === 'grades' ? 'contained' : 'outlined'}
             onClick={() => setActiveTab('grades')}
+            startIcon={<PersonIcon />}
           >
             Enter Grades
+          </Button>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={() => setShowOnlineClassroom(true)}
+            startIcon={<VideoCallIcon />}
+            sx={{ ml: 'auto' }}
+          >
+            Online Classroom
           </Button>
         </Box>
       </Grid>

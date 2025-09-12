@@ -24,11 +24,13 @@ import {
 import {
   ExitToApp as LogoutIcon
 } from '@mui/icons-material';
-import { getData, addRecord, updateRecord } from '../utils/data';
+import { getData, addRecord, updateRecord, setDisciplineBadge, removeDisciplineBadge } from '../utils/data';
 import AdminView from './AdminView';
 import TeacherView from './TeacherView';
 import StudentView from './StudentView';
 import AlumniView from './AlumniView';
+import ClassroomManager from './ClassroomManager';
+import AIChatbot from './AIChatbot';
 
 const Dashboard = ({ user, onLogout }) => {
   const [data, setData] = useState(null);
@@ -38,6 +40,9 @@ const Dashboard = ({ user, onLogout }) => {
   const [loading, setLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [showClassroom, setShowClassroom] = useState(false);
+  const [classroomView, setClassroomView] = useState(null);
+  const [currentPage, setCurrentPage] = useState('dashboard');
 
   useEffect(() => {
     const currentData = getData();
@@ -204,6 +209,16 @@ const Dashboard = ({ user, onLogout }) => {
             message = 'Notice posted successfully';
           }
           break;
+        case 'discipline':
+          if (formData.action === 'add') {
+            handleDisciplineAction(formData.studentId, 'add', {
+              reason: formData.reason,
+              notes: formData.notes,
+              assignedBy: user.name
+            });
+            return; // handleDisciplineAction handles the snackbar and dialog closing
+          }
+          break;
 
       }
 
@@ -257,10 +272,88 @@ const Dashboard = ({ user, onLogout }) => {
     );
   };
 
+  // Classroom handlers
+  const handleOpenTeacherClassroom = () => {
+    setClassroomView('teacher');
+    setShowClassroom(true);
+  };
+
+  const handleOpenStudentClassroom = () => {
+    setClassroomView('student');
+    setShowClassroom(true);
+  };
+
+  const handleBackFromClassroom = () => {
+    setShowClassroom(false);
+    setClassroomView(null);
+  };
+
+  // Handle discipline badge actions
+  const handleDisciplineAction = (studentId, action, badgeData = null) => {
+    setLoading(true);
+    try {
+      let updatedData;
+      let message;
+
+      if (action === 'add' && badgeData) {
+        updatedData = setDisciplineBadge(studentId, badgeData);
+        message = 'Discipline badge added successfully';
+      } else if (action === 'remove') {
+        updatedData = removeDisciplineBadge(studentId);
+        message = 'Discipline badge removed successfully';
+      }
+
+      if (updatedData) {
+        setData(updatedData);
+        setSnackbar({
+          open: true,
+          message,
+          severity: 'success'
+        });
+        handleCloseDialog();
+      } else {
+        throw new Error('Failed to update discipline badge');
+      }
+    } catch (error) {
+      console.error('Error updating discipline badge:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error updating discipline badge. Please try again.',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Set current page based on user role
+  useEffect(() => {
+    if (user.role === 'admin') {
+      setCurrentPage('admin');
+    } else if (user.role === 'teacher') {
+      setCurrentPage('teacher');
+    } else if (user.role === 'student') {
+      setCurrentPage('student');
+    } else if (user.role === 'alumni') {
+      setCurrentPage('alumni');
+    } else {
+      setCurrentPage('dashboard');
+    }
+  }, [user.role]);
+
   // Content rendering for different views
   const renderContent = () => {
     if (user.role === 'admin') {
-      return <AdminView data={data} handleOpenDialog={handleOpenDialog} handleAlumniAction={handleAlumniAction} />;
+      return (
+        <AdminView 
+          data={data} 
+          handleOpenDialog={handleOpenDialog} 
+          handleAlumniAction={handleAlumniAction}
+          onOpenTeacherClassroom={handleOpenTeacherClassroom}
+          onOpenStudentClassroom={handleOpenStudentClassroom}
+          onDisciplineAction={handleDisciplineAction}
+        />
+      );
     }
 
     if (user.role === 'teacher') {
@@ -296,6 +389,7 @@ const Dashboard = ({ user, onLogout }) => {
         case 'student': return 'Add New Student';
         case 'class': return 'Add New Class';
         case 'notice': return 'Post New Notice';
+        case 'discipline': return formData.action === 'add' ? 'Add Discipline Badge' : 'Discipline Badge';
         default: return 'Add New';
       }
     };
@@ -527,6 +621,38 @@ const Dashboard = ({ user, onLogout }) => {
               />
             </>
           );
+        case 'discipline':
+          return (
+            <>
+              <Typography variant="h6" gutterBottom>
+                Student: {formData.studentName}
+              </Typography>
+              <TextField
+                autoFocus
+                margin="dense"
+                label="Reason for Discipline Badge"
+                fullWidth
+                multiline
+                rows={3}
+                variant="outlined"
+                value={formData.reason || ''}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                required
+                helperText="Explain the reason for assigning this discipline badge"
+              />
+              <TextField
+                margin="dense"
+                label="Additional Notes"
+                fullWidth
+                multiline
+                rows={2}
+                variant="outlined"
+                value={formData.notes || ''}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                helperText="Any additional notes or recommendations"
+              />
+            </>
+          );
 
         default:
           return null;
@@ -553,6 +679,17 @@ const Dashboard = ({ user, onLogout }) => {
       </Dialog>
     );
   };
+
+  // Show classroom manager if requested
+  if (showClassroom) {
+    return (
+      <ClassroomManager
+        data={data}
+        onBack={handleBackFromClassroom}
+        initialView={classroomView}
+      />
+    );
+  }
 
   return (
     <Box>
@@ -631,6 +768,9 @@ const Dashboard = ({ user, onLogout }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* AI Chatbot */}
+      <AIChatbot user={user} currentPage={currentPage} />
     </Box>
   );
 };

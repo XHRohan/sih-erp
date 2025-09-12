@@ -34,9 +34,11 @@ import {
     Assignment as AssignmentIcon,
     Announcement as AnnouncementIcon,
     Notifications as NotificationsIcon,
-    NotificationsActive as NotificationsActiveIcon
+    NotificationsActive as NotificationsActiveIcon,
+    VideoCall as VideoCallIcon
 } from '@mui/icons-material';
 import CareerAI from './CareerAI';
+import StudentClassroom from './StudentClassroom';
 
 const StudentView = ({ user, data, setData, setSnackbar }) => {
     // All hooks must be at the top, before any conditional returns
@@ -44,6 +46,7 @@ const StudentView = ({ user, data, setData, setSnackbar }) => {
     const [nextLecture, setNextLecture] = React.useState(null);
     const [currentLecture, setCurrentLecture] = React.useState(null);
     const [todaySchedule, setTodaySchedule] = React.useState([]);
+    const [showOnlineClassroom, setShowOnlineClassroom] = React.useState(false);
 
     // Get current student data (moved before useEffect)
     const currentStudent = data?.students?.find(s => s.id === user.studentId);
@@ -220,6 +223,24 @@ const StudentView = ({ user, data, setData, setSnackbar }) => {
     const averageGrade = calculateAverageGrade();
     const badges = calculateBadges();
 
+    // Handle online classroom
+    const handleBackFromClassroom = () => {
+        setShowOnlineClassroom(false);
+    };
+
+    // Show online classroom if requested
+    if (showOnlineClassroom) {
+        return (
+            <StudentClassroom
+                student={currentStudent}
+                availableClasses={data.classes}
+                teachers={data.teachers}
+                data={data}
+                onBack={handleBackFromClassroom}
+            />
+        );
+    }
+
     return (
         <Grid container spacing={3}>
             {/* Student Profile */}
@@ -253,21 +274,59 @@ const StudentView = ({ user, data, setData, setSnackbar }) => {
                         </Box>
 
                         {/* Badges */}
-                        {badges.length > 0 && (
-                            <Box sx={{ mt: 2 }}>
-                                <Typography variant="subtitle2" gutterBottom>Achievements</Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                    {badges.map((badge, index) => (
-                                        <Chip
-                                            key={index}
-                                            label={badge.label}
-                                            color={badge.color}
-                                            size="small"
-                                        />
-                                    ))}
-                                </Box>
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom>Status & Achievements</Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                {/* Discipline Badge */}
+                                {data.disciplineBadges?.[currentStudent.id]?.hasBadDiscipline ? (
+                                    <Chip
+                                        label="Discipline Issue"
+                                        color="error"
+                                        size="small"
+                                        sx={{ 
+                                            fontWeight: 'bold',
+                                            '& .MuiChip-label': {
+                                                color: 'white'
+                                            }
+                                        }}
+                                    />
+                                ) : (
+                                    <Chip
+                                        label="Good Discipline"
+                                        color="success"
+                                        size="small"
+                                        variant="outlined"
+                                    />
+                                )}
+                                
+                                {/* Achievement Badges */}
+                                {badges.map((badge, index) => (
+                                    <Chip
+                                        key={index}
+                                        label={badge.label}
+                                        color={badge.color}
+                                        size="small"
+                                    />
+                                ))}
                             </Box>
-                        )}
+                            
+                            {/* Discipline Details */}
+                            {data.disciplineBadges?.[currentStudent.id]?.hasBadDiscipline && (
+                                <Box sx={{ mt: 1, p: 1, bgcolor: 'error.light', borderRadius: 1 }}>
+                                    <Typography variant="caption" color="error.contrastText" display="block">
+                                        <strong>Reason:</strong> {data.disciplineBadges[currentStudent.id].reason}
+                                    </Typography>
+                                    <Typography variant="caption" color="error.contrastText" display="block">
+                                        <strong>Assigned:</strong> {data.disciplineBadges[currentStudent.id].assignedDate} by {data.disciplineBadges[currentStudent.id].assignedBy}
+                                    </Typography>
+                                    {data.disciplineBadges[currentStudent.id].notes && (
+                                        <Typography variant="caption" color="error.contrastText" display="block">
+                                            <strong>Notes:</strong> {data.disciplineBadges[currentStudent.id].notes}
+                                        </Typography>
+                                    )}
+                                </Box>
+                            )}
+                        </Box>
                     </CardContent>
                 </Card>
             </Grid>
@@ -276,20 +335,31 @@ const StudentView = ({ user, data, setData, setSnackbar }) => {
             <Grid item xs={12} md={6}>
                 <Card>
                     <CardHeader
-                        title="Today's Schedule & Notifications"
+                        title="Today's Schedule & Online Classes"
                         avatar={<PersonIcon />}
                         action={
-                            'Notification' in window && (
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                 <Button
-                                    variant={notificationsEnabled ? "contained" : "outlined"}
-                                    color={notificationsEnabled ? "success" : "primary"}
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() => setShowOnlineClassroom(true)}
+                                    startIcon={<VideoCallIcon />}
                                     size="small"
-                                    onClick={handleNotificationToggle}
-                                    startIcon={notificationsEnabled ? <NotificationsActiveIcon /> : <NotificationsIcon />}
                                 >
-                                    {notificationsEnabled ? 'Notifications ON' : 'Enable Notifications'}
+                                    Join Classes
                                 </Button>
-                            )
+                                {'Notification' in window && (
+                                    <Button
+                                        variant={notificationsEnabled ? "contained" : "outlined"}
+                                        color={notificationsEnabled ? "success" : "primary"}
+                                        size="small"
+                                        onClick={handleNotificationToggle}
+                                        startIcon={notificationsEnabled ? <NotificationsActiveIcon /> : <NotificationsIcon />}
+                                    >
+                                        {notificationsEnabled ? 'Notifications ON' : 'Enable Notifications'}
+                                    </Button>
+                                )}
+                            </Box>
                         }
                     />
                     <CardContent>
