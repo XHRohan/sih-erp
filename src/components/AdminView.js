@@ -370,53 +370,7 @@ const AdminView = ({ data, handleOpenDialog, handleAlumniAction, onOpenTeacherCl
       </Grid>
 
       {/* Online Classroom Management */}
-      <Grid item xs={12}>
-        <Card>
-          <CardHeader title="Online Classroom Management" />
-          <CardContent>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <Box sx={{ textAlign: 'center', p: 3, bgcolor: 'primary.light', borderRadius: 2 }}>
-                  <VideoCallIcon sx={{ fontSize: 48, color: 'white', mb: 2 }} />
-                  <Typography variant="h6" color="white" gutterBottom>
-                    Teacher Dashboard
-                  </Typography>
-                  <Typography variant="body2" color="white" sx={{ mb: 2 }}>
-                    Start and manage online classes
-                  </Typography>
-                  <Button 
-                    variant="contained" 
-                    color="secondary"
-                    onClick={onOpenTeacherClassroom}
-                    sx={{ bgcolor: 'white', color: 'primary.main', '&:hover': { bgcolor: 'grey.100' } }}
-                  >
-                    Open Teacher Portal
-                  </Button>
-                </Box>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Box sx={{ textAlign: 'center', p: 3, bgcolor: 'success.light', borderRadius: 2 }}>
-                  <SchoolIcon sx={{ fontSize: 48, color: 'white', mb: 2 }} />
-                  <Typography variant="h6" color="white" gutterBottom>
-                    Student Portal
-                  </Typography>
-                  <Typography variant="body2" color="white" sx={{ mb: 2 }}>
-                    Join live classes and view schedules
-                  </Typography>
-                  <Button 
-                    variant="contained" 
-                    color="secondary"
-                    onClick={onOpenStudentClassroom}
-                    sx={{ bgcolor: 'white', color: 'success.main', '&:hover': { bgcolor: 'grey.100' } }}
-                  >
-                    Open Student Portal
-                  </Button>
-                </Box>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-      </Grid>
+      
 
       {/* Notice Posting Section */}
       <Grid item xs={12}>

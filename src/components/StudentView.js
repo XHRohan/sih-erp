@@ -35,10 +35,12 @@ import {
     Announcement as AnnouncementIcon,
     Notifications as NotificationsIcon,
     NotificationsActive as NotificationsActiveIcon,
-    VideoCall as VideoCallIcon
+    VideoCall as VideoCallIcon,
+    Description as ResumeIcon
 } from '@mui/icons-material';
 import CareerAI from './CareerAI';
 import StudentClassroom from './StudentClassroom';
+import ResumeBuilder from './ResumeBuilder';
 
 const StudentView = ({ user, data, setData, setSnackbar }) => {
     // All hooks must be at the top, before any conditional returns
@@ -47,6 +49,7 @@ const StudentView = ({ user, data, setData, setSnackbar }) => {
     const [currentLecture, setCurrentLecture] = React.useState(null);
     const [todaySchedule, setTodaySchedule] = React.useState([]);
     const [showOnlineClassroom, setShowOnlineClassroom] = React.useState(false);
+    const [showResumeBuilder, setShowResumeBuilder] = React.useState(false);
 
     // Get current student data (moved before useEffect)
     const currentStudent = data?.students?.find(s => s.id === user.studentId);
@@ -228,6 +231,11 @@ const StudentView = ({ user, data, setData, setSnackbar }) => {
         setShowOnlineClassroom(false);
     };
 
+    // Handle resume builder
+    const handleBackFromResumeBuilder = () => {
+        setShowResumeBuilder(false);
+    };
+
     // Show online classroom if requested
     if (showOnlineClassroom) {
         return (
@@ -237,6 +245,17 @@ const StudentView = ({ user, data, setData, setSnackbar }) => {
                 teachers={data.teachers}
                 data={data}
                 onBack={handleBackFromClassroom}
+            />
+        );
+    }
+
+    // Show resume builder if requested
+    if (showResumeBuilder) {
+        return (
+            <ResumeBuilder
+                student={currentStudent}
+                data={data}
+                onBack={handleBackFromResumeBuilder}
             />
         );
     }
@@ -347,6 +366,15 @@ const StudentView = ({ user, data, setData, setSnackbar }) => {
                                     size="small"
                                 >
                                     Join Classes
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => setShowResumeBuilder(true)}
+                                    startIcon={<ResumeIcon />}
+                                    size="small"
+                                >
+                                    Resume Builder
                                 </Button>
                                 {'Notification' in window && (
                                     <Button
@@ -475,6 +503,55 @@ const StudentView = ({ user, data, setData, setSnackbar }) => {
                                 </Typography>
                             </Box>
                         ))}
+                    </CardContent>
+                </Card>
+            </Grid>
+
+            {/* Resume Builder */}
+            <Grid item xs={12} md={6}>
+                <Card>
+                    <CardHeader
+                        title="Resume Builder"
+                        avatar={<ResumeIcon />}
+                    />
+                    <CardContent>
+                        <Box sx={{ textAlign: 'center', mb: 2 }}>
+                            <Typography variant="body1" gutterBottom>
+                                Create Your Professional Resume
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                Build a one-page resume with your academic achievements, skills, and experience
+                            </Typography>
+                        </Box>
+
+                        <Button
+                            variant="contained"
+                            fullWidth
+                            startIcon={<ResumeIcon />}
+                            onClick={() => setShowResumeBuilder(true)}
+                            sx={{ mb: 2 }}
+                        >
+                            Build Resume
+                        </Button>
+
+                        <Box sx={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                            <Box>
+                                <Typography variant="caption" color="text.secondary">
+                                    Current GPA
+                                </Typography>
+                                <Typography variant="h6" color="primary">
+                                    {averageGrade ? (averageGrade / 10).toFixed(2) : 'N/A'}
+                                </Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="caption" color="text.secondary">
+                                    Attendance
+                                </Typography>
+                                <Typography variant="h6" color="success.main">
+                                    {overallPercentage}%
+                                </Typography>
+                            </Box>
+                        </Box>
                     </CardContent>
                 </Card>
             </Grid>
